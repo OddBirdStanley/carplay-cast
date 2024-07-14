@@ -91,14 +91,14 @@ Include all User applications on the CarPlay dashboard
     // Add a "carplay declaration" to each app so they appear on the dashboard
     addCarplayDeclarationsToAppLibrary(allAppsLibrary);
 
-    NSArray *systemIdentifiers = @[@"com.apple.CarPlayTemplateUIHost", @"com.apple.MusicUIService", @"com.apple.springboard", @"com.apple.InCallService", @"com.apple.CarPlaySettings", @"com.apple.CarPlayApp"];
+    NSArray *systemIdentifiers = @[@"com.apple.CarPlayTemplateUIHost", @"com.apple.MusicUIService", @"com.apple.springboard", @"com.apple.InCallService", @"com.apple.CarPlaySettings", @"com.apple.CarPlayApp", @"com.apple.CarPlayWallpaper"];
     for (NSString *systemIdent in systemIdentifiers)
     {
         id appProxy = objcInvoke_1(objc_getClass("LSApplicationProxy"), @"applicationProxyForIdentifier:", systemIdent);
         id appState = objcInvoke(appProxy, @"appState");
         if (objcInvokeT(appState, @"isValid", int) == 1)
         {
-         //   objcInvoke_2(allAppsLibrary, @"addApplicationProxy:withOverrideURL:", appProxy, 0);
+           objcInvoke_2(allAppsLibrary, @"addApplicationProxy:withOverrideURL:", appProxy, 0);
         }
     }
 
@@ -310,7 +310,7 @@ will launch their normal Carplay mode UI
 
     if ([[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.CarPlayApp"])
     {
-        %init(CARPLAY);
+       %init(CARPLAY);
         // Upload any relevant crashlogs
         symbolicateAndUploadCrashlogs();
     }
