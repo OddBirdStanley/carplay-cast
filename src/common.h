@@ -3,6 +3,7 @@
 #include <objc/message.h>
 #include <dlfcn.h>
 #include "CRPreferences.h"
+#include <substrate.h>
 
 #define BAIL_IF_UNSUPPORTED_IOS { \
     if ([[[UIDevice currentDevice] systemVersion] compare:@"14.0" options:NSNumericSearch] == NSOrderedAscending) \
@@ -16,9 +17,18 @@
     if ([func containsString:@"_method$"]) \
     { \
         NSArray *components = [func componentsSeparatedByString:@"$"]; \
-        func = [NSString stringWithFormat:@"[%@ %@]", components[2], components[3]]; \
+        NSString *className = components[2]; \
+        NSMutableArray *methodComponents = [NSMutableArray array]; \
+        for (NSUInteger i = 3; i < components.count; i++) { \
+            [methodComponents addObject:components[i]]; \
+            if (i < components.count - 1) { \
+                [methodComponents addObject:@":"]; \
+            } \
+        } \
+        NSString *formattedMethod = [methodComponents componentsJoinedByString:@""]; \
+        func = [NSString stringWithFormat:@"[%@ %@]", className, formattedMethod]; \
     } \
-    NSLog(@"carplayenable LOG_LIFECYCLE_EVENT %@", func); \
+    NSLog(@"[carplayenable] %@", func); \
 }
 
 #define getIvar(object, ivar) [object valueForKey:ivar]

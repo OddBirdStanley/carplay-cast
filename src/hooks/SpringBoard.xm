@@ -331,7 +331,6 @@ Is this a main-screen scene view for an application that is being hosted on the 
 }
 
 - (id)homeGrabberView {
-    LOG_LIFECYCLE_EVENT;
 
     id homeGrabberView = %orig;
     if (!homeGrabberView) {

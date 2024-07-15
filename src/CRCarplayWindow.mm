@@ -296,7 +296,8 @@ id getCarplayCADisplay(void)
     self.appViewController = objcInvoke_2([objc_getClass("SBAppViewController") alloc], @"initWithIdentifier:andApplicationSceneEntity:", appIdentifier, appSceneEntity);
     assertGotExpectedObject(self.appViewController, @"SBAppViewController");
     objcInvoke_1(self.appViewController, @"setIgnoresOcclusions:", 0);
-    setIvar(self.appViewController, @"_currentMode", @(2));
+    objcInvoke_1(self.appViewController, @"setAutomatesLifecycle:", 0);
+    objcInvoke_1(self.appViewController, @"setRequestedMode:", @(2));
     objcInvoke(getIvar(self.appViewController, @"_activationSettings"), @"clearActivationSettings");
 
     id sceneUpdateTransaction = objcInvoke_2(self.appViewController, @"_createSceneUpdateTransactionForApplicationSceneEntity:deliveringActions:", appSceneEntity, 1);
