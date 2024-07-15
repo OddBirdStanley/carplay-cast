@@ -39,14 +39,27 @@ Invoked when the device is being locked while applications are running/active
 
 %end
 
+%hook __NSSetM
+
+- (void)removeObject:(id)object
+{
+    if (object == nil) {
+        // wtf
+        NSLog(@"__NSSetM Attempted to remove nil object from set %@", self);
+        return;
+    }
+
+    %orig;
+}
+
+%end
 
 %hook SpringBoard
 
 /*
 When an app icon is tapped on the Carplay dashboard
 */
-%new
-- (void)handleCarPlayLaunchNotification:(id)notification
+%new- (void)handleCarPlayLaunchNotification:(id)notification
 {
     LOG_LIFECYCLE_EVENT;
     NSString *identifier = [notification userInfo][@"identifier"];
