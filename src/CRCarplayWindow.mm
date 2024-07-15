@@ -317,24 +317,32 @@ id getCarplayCADisplay(void)
         objcInvoke_1(appProcess, @"_executeBlockAfterLaunchCompletes:", ^void(void) {
             // Wait a sec then remove the splashscreen image. It should already be hidden/covered by the live app view, but it needs to be removed
             // so it doesn't poke through if the App's orientation changes to portait
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
                 [self.launchImageView removeFromSuperview];
+
+                id appScene = objcInvoke(sceneHandle, @"sceneIfExists");
+                if (!appScene)
+                {
+                    NSLog(@"Scene does not exist");
+                    return;
+                }
+
+                id sceneSettings = objcInvoke(appScene, @"settings");
+                sceneSettings = objcInvoke(sceneSettings, @"mutableCopy");
+                assertGotExpectedObject(sceneSettings, @"UIMutableApplicationSceneSettings");
+
+                objcInvoke_1(sceneSettings, @"setBackgrounded:", 0);
+                objcInvoke_1(sceneSettings, @"setForeground:", 1);
+                objcInvoke_1(sceneSettings, @"setInterfaceOrientation:", self.orientation);
+                objcInvoke_1(sceneSettings, @"setDeviceOrientation:", self.orientation);
+
+               ((void (*)(id, SEL, id, id, id))objc_msgSend)(appScene, NSSelectorFromString(@"updateSettings:withTransitionContext:completion:"), sceneSettings, nil, ^{});
 
                 if (self.shouldGenerateSnapshot)
                 {
                     // Now that the app is launched and presumably in landscape mode, save a snapshot.
                     // If an app does not natively support landscape mode and doesn't ship a landscape launch image, this snapshot can be used during cold-launches
-                    id appScene = objcInvoke(sceneHandle, @"sceneIfExists");
-                    if (!appScene)
-                    {
-                        return;
-                    }
 
-                    id sceneSettings = objcInvoke(appScene, @"settings");
-                    sceneSettings = objcInvoke(sceneSettings, @"mutableCopy");
-                    assertGotExpectedObject(sceneSettings, @"UIMutableApplicationSceneSettings");
-
-                    objcInvoke_1(sceneSettings, @"setInterfaceOrientation:", self.orientation);
                     id snapshotContext = objcInvoke_2(objc_getClass("FBSSceneSnapshotContext"), @"contextWithSceneID:settings:", objcInvoke(appScene, @"identifier"), sceneSettings);
                     objcInvoke_1(snapshotContext, @"setName:", @"CarPlayLaunchImage");
                     objcInvoke_1(snapshotContext, @"setScale:", 2);

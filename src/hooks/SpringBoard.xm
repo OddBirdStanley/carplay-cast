@@ -59,7 +59,8 @@ Invoked when the device is being locked while applications are running/active
 /*
 When an app icon is tapped on the Carplay dashboard
 */
-%new- (void)handleCarPlayLaunchNotification:(id)notification
+%new
+- (void)handleCarPlayLaunchNotification:(id)notification
 {
     LOG_LIFECYCLE_EVENT;
     NSString *identifier = [notification userInfo][@"identifier"];
@@ -74,8 +75,7 @@ When an app icon is tapped on the Carplay dashboard
     {
         // Dismiss any apps that are already being hosted on Carplay
         id liveCarplayWindow = objcInvoke([UIApplication sharedApplication], @"liveCarplayWindow");
-        if (liveCarplayWindow != nil)
-        {
+        if (liveCarplayWindow != nil)        {
             objcInvoke(liveCarplayWindow, @"dismiss");
         }
 
