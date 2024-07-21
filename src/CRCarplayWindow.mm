@@ -69,7 +69,7 @@ id getCarplayCADisplay(void)
         // Add the user's wallpaper to the window. It will be visible when the app is in portrait mode
         CGRect rootWindowFrame = [[self rootWindow] frame];
 
-        self.appContainerView = [[UIView alloc] initWithFrame:CGRectMake(CARPLAY_DOCK_WIDTH, rootWindowFrame.origin.y, rootWindowFrame.size.width - CARPLAY_DOCK_WIDTH, rootWindowFrame.size.height)];
+        self.appContainerView = [[UIView alloc] initWithFrame:CGRectMake(CARPLAY_DOCK_WIDTH, 0, rootWindowFrame.size.width - CARPLAY_DOCK_WIDTH, rootWindowFrame.size.height)];
         [[self appContainerView] setBackgroundColor:[UIColor clearColor]];
         [[self rootWindow] addSubview:[self appContainerView]];
 
@@ -557,7 +557,11 @@ Handle resizing the Carplay App window. Called anytime the app orientation chang
         return;
     }
 
-    id appSceneView = getIvar(getIvar(self.appViewController, @"_deviceAppViewController"), @"_sceneView");
+    // Make sure the grabber doesn't appear
+    id deviceAppViewController = getIvar(self.appViewController, @"_deviceAppViewController");
+    ((void (*)(id, SEL, unsigned long long))objc_msgSend)(deviceAppViewController, NSSelectorFromString(@"setHomeGrabberDisplayMode:"), 1);
+
+    id appSceneView = getIvar(deviceAppViewController, @"_sceneView");
     assertGotExpectedObject(appSceneView, @"SBSceneView");
     UIView *hostingContentView = getIvar(appSceneView, @"_sceneContentContainerView");
     UIScreen *targetScreen = nil;
@@ -578,29 +582,33 @@ Handle resizing the Carplay App window. Called anytime the app orientation chang
 
     assertGotExpectedObject(targetScreen, @"UIScreen");
 
-    CGRect carplayDisplayBounds = [targetScreen bounds];
+    CGSize carplayDisplaySize = [targetScreen currentMode].size;
     CGFloat dockWidth = (fullscreen) ? 0 : CARPLAY_DOCK_WIDTH;
-    CGSize carplayDisplaySize = CGSizeMake(carplayDisplayBounds.size.width - dockWidth, carplayDisplayBounds.size.height);
+    carplayDisplaySize = CGSizeMake(carplayDisplaySize.width - dockWidth, carplayDisplaySize.height);
 
     CGSize mainScreenSize = ((CGRect (*)(id, SEL, int))objc_msgSend)([UIScreen mainScreen], NSSelectorFromString(@"boundsForOrientation:"), desiredOrientation).size;
 
-    CGFloat widthScale = carplayDisplaySize.width / mainScreenSize.width;
-    CGFloat heightScale = carplayDisplaySize.height / mainScreenSize.height;
-    CGFloat xOrigin = [[self rootWindow] frame].origin.x;
+    CGFloat largerWidth = MAX(mainScreenSize.width, carplayDisplaySize.width);
+    CGFloat largerHeight = MAX(mainScreenSize.height, carplayDisplaySize.height);
+    CGFloat widthScale = largerWidth / mainScreenSize.width;
+    CGFloat heightScale = largerHeight / mainScreenSize.height;
 
     // Special scaling when in portrait mode (because the carplay screen is always physically landscape)
     if (UIInterfaceOrientationIsPortrait(desiredOrientation))
     {
         // Use half the display's width
         widthScale = (carplayDisplaySize.width / 2) / mainScreenSize.width;
-        // Center it
-        CGFloat scaledDisplayWidth = carplayDisplaySize.width * widthScale;
-        xOrigin = (carplayDisplaySize.width / 2) - (scaledDisplayWidth / 2);
     }
 
     NSLog(@"Scaling app view to %.2fx%.2f (target size: %.2fx%.2f)", widthScale, heightScale, carplayDisplaySize.width, carplayDisplaySize.height);
-    [hostingContentView setTransform:CGAffineTransformMakeScale(widthScale, heightScale)];
-    [[self.appViewController view] setFrame:CGRectMake(xOrigin, [[self.appViewController view] frame].origin.y, carplayDisplaySize.width, carplayDisplaySize.height)];
+    ((void (*)(id, SEL, CGSize, int))objc_msgSend)(self.appViewController, NSSelectorFromString(@"setContentReferenceSize:withInterfaceOrientation:"), carplayDisplaySize, desiredOrientation);
+
+    UIView *appView = objcInvoke(self.appViewController, @"view");
+    [appView setTransform:CGAffineTransformMakeScale(widthScale, heightScale)];
+
+    UIView *appContainerView = [self appContainerView];
+    CGRect rootWindowBounds = [[self rootWindow] bounds];
+    appContainerView.center = CGPointMake(CGRectGetMidX(rootWindowBounds), CGRectGetMidY(rootWindowBounds));
 
     BOOL rightHandDock = [self shouldUseRightHandDock];
     UIView *containingView = [self appContainerView];
