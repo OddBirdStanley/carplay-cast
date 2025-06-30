@@ -20,6 +20,8 @@ If an app already supports CarPlay, leave it alone
 */
 void addCarplayDeclarationsToAppLibrary(id appLibrary)
 {
+    LOG_LIFECYCLE_EVENT;
+
     // Load exluded apps from user's preferences
     NSArray *userExcludedApps = [[CRPreferences sharedInstance] excludedApplications];
 
@@ -304,14 +306,11 @@ will launch their normal Carplay mode UI
 %end
 
 
-%ctor
-{
+%ctor {
     BAIL_IF_UNSUPPORTED_IOS;
 
-    if ([[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.CarPlayApp"])
-    {
-       %init(CARPLAY);
-        // Upload any relevant crashlogs
-        symbolicateAndUploadCrashlogs();
+    if (![[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.CarPlayApp"]) {
+        return;
     }
+
 }

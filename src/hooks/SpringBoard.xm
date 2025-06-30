@@ -196,24 +196,44 @@ happen while the device is in a faceup/facedown orientation.
 Called when something is trying to change a scene's settings (including sending it to background/foreground).
 Use this to prevent the App from going to sleep when other applications are launched on the main screen.
 */
-- (void)updateSettings:(id)arg1 withTransitionContext:(id)arg2 completion:(id)arg3
+- (void)updateSettings:(id)settings withTransitionContext:(id)arg2 completion:(id)arg3
 {
-    LOG_LIFECYCLE_EVENT;
+    // LOG_LIFECYCLE_EVENT;
     id sceneClient = objcInvoke(self, @"client");
-    if ([sceneClient respondsToSelector:NSSelectorFromString(@"process")])
-    {
+    if ([sceneClient respondsToSelector:NSSelectorFromString(@"process")]) {
         NSString *sceneAppBundleID = objcInvoke(objcInvoke(sceneClient, @"process"), @"bundleIdentifier");
         NSArray *lockAssertions = objc_getAssociatedObject([UIApplication sharedApplication], &kPropertyKey_lockAssertionIdentifiers);
-        if ([lockAssertions containsObject:sceneAppBundleID])
-        {
-            if (objcInvokeT(arg1, @"isForeground", BOOL) == NO)
-            {
-                return;
+        if ([lockAssertions containsObject:sceneAppBundleID]) {
+            NSLog(@"settings: %@", settings);
+            if ([settings isKindOfClass:objc_getClass("UIMutableApplicationSceneSettings")]) {
+
+                objcInvoke_1(settings, @"setForeground:", @(1));
+                objcInvoke_1(settings, @"setInterfaceOrientation:", @(2));
+
+                id displayConfiguration = nil;
+                for (UIScreen *currentScreen in [UIScreen screens]) {
+                    if (objcInvokeT(currentScreen, @"_isCarScreen", BOOL)) {
+                        
+                        displayConfiguration = objcInvoke(currentScreen, @"fbsDisplay");
+                        if (displayConfiguration) {
+                            break;
+                        }
+                    }
+                }
+                NSLog(@"using dc: %@", displayConfiguration);
+
+                objcInvoke_1(settings, @"setDisplayConfiguration:", displayConfiguration);
+
+                CGRect displayBounds = ((CGRect (*)(id, SEL))objc_msgSend)(displayConfiguration, sel_registerName("bounds"));
+                ((void (*)(id, SEL, CGRect))objc_msgSend)(settings, sel_registerName("setFrame:"), displayBounds); 
+
+                
             }
         }
     }
 
-    %orig;
+    %orig(settings, arg2, arg3);
+}
 }
 
 /*
@@ -452,6 +472,20 @@ The relevant modes for this tweak are LiveContent (interactive app) and Placehol
 
 %end
 
+%hook SBApplicationSceneHandleRequest 
+
++ (id)defaultSceneSpecificationForDisplayIdentity:(id)arg1 {
+    LOG_LIFECYCLE_EVENT;
+
+    NSLog(@"defaultSceneSpecificationForDisplayIdentity: %@. %@", arg1, [arg1 class]);
+    id displayConfiguration = objcInvoke([UIScreen mainScreen], @"fbsDisplay");
+    id identity = objcInvoke(displayConfiguration, @"identity");
+    NSLog(@"new=defaultSceneSpecificationForDisplayIdentity: %@. %@", identity, [identity class]);
+    return %orig(identity);
+}
+
+%end
+
 %hook UIScreen
 
 %new
@@ -495,13 +529,18 @@ int hook_BKSDisplayServicesSetScreenBlanked(int arg1)
             if ([lockAssertions containsObject:sceneAppBundleID])
             {
                 // Turn the screen off as originally intended
-                orig_BKSDisplayServicesSetScreenBlanked(1);
+                if (orig_BKSDisplayServicesSetScreenBlanked) {
+                    orig_BKSDisplayServicesSetScreenBlanked(1);
+                }
 
                 // Wait for the events to propagate through the system, then undo it (doing this too early doesn't work).
                 // This does not actually turn the display on
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-                    orig_BKSDisplayServicesSetScreenBlanked(0);
-                });
+                if (orig_BKSDisplayServicesSetScreenBlanked) {
+                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                        orig_BKSDisplayServicesSetScreenBlanked(0);
+                    });
+                }
+                
                 return 0;
             }
         }

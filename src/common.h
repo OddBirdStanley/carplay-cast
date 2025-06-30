@@ -6,7 +6,7 @@
 #include <substrate.h>
 
 #define BAIL_IF_UNSUPPORTED_IOS { \
-    if ([[[UIDevice currentDevice] systemVersion] compare:@"14.0" options:NSNumericSearch] == NSOrderedAscending) \
+    if ([[[UIDevice currentDevice] systemVersion] compare:@"18.0" options:NSNumericSearch] == NSOrderedAscending) \
     { \
         return; \
     } \
@@ -38,10 +38,17 @@ __unused static void LogSelectorError(id object, SEL selector) {
     NSLog(@"carplayenable error: %@ does not respond to selector %@", object, NSStringFromSelector(selector));
 }
 
-#define objcInvokeT(a, b, t) \
-    ([a respondsToSelector:NSSelectorFromString(b)] ? \
-    ((t (*)(id, SEL))objc_msgSend)(a, NSSelectorFromString(b)) : \
-    (LogSelectorError(a, NSSelectorFromString(b)), (t)0))
+#define objcInvokeT(_obj, s, t)                                                       \
+({                                                                                \
+    SEL         _sel = NSSelectorFromString(s);                                   \
+    Method      _m   = _obj ? class_getInstanceMethod(object_getClass(_obj), _sel) : NULL; \
+    _m ? ((t (*)(id, SEL))objc_msgSend)(_obj, _sel) : (LogSelectorError(_obj, _sel), (t)0); \
+})
+
+// #define objcInvokeT(a, b, t) \
+//     ([a respondsToSelector:NSSelectorFromString(b)] ? \
+//     ((t (*)(id, SEL))objc_msgSend)(a, NSSelectorFromString(b)) : \
+//     (LogSelectorError(a, NSSelectorFromString(b)), (t)0))
 
 #define objcInvoke(a, b) objcInvokeT(a, b, id)
 #define objcInvoke_1(a, b, c) ((id (*)(id, SEL, typeof(c)))objc_msgSend)(a, NSSelectorFromString(b), c)

@@ -49,11 +49,26 @@ id getCarplayCADisplay(void)
         }
         else
         {
-            id carplayExternalDisplay = getCarplayCADisplay();
-            assertGotExpectedObject(carplayExternalDisplay, @"CADisplay");
-
-            id displayConfiguration = objcInvoke_2([objc_getClass("FBSDisplayConfiguration") alloc], @"initWithCADisplay:isMainDisplay:", carplayExternalDisplay, 0);
+            id displayConfiguration = nil;
+            for (UIScreen *currentScreen in [UIScreen screens]) {
+                if (objcInvokeT(currentScreen, @"_isCarScreen", BOOL)) {
+                    
+                    displayConfiguration = objcInvoke(currentScreen, @"fbsDisplay");
+                    if (displayConfiguration) {
+                        break;
+                    }
+                }
+            }
             assertGotExpectedObject(displayConfiguration, @"FBSDisplayConfiguration");
+            NSLog(@"carplayenable: Creating window with display configuration: %@", displayConfiguration);
+
+            // id displayIdentity = objcInvoke(displayConfiguration, @"identity");
+
+            // id carplayExternalDisplay = getCarplayCADisplay();
+            // assertGotExpectedObject(carplayExternalDisplay, @"CADisplay");
+
+            // id displayConfiguration = objcInvoke_2([objc_getClass("FBSDisplayConfiguration") alloc], @"initWithCADisplay:isMainDisplay:", carplayExternalDisplay, 0);
+            // assertGotExpectedObject(displayConfiguration, @"FBSDisplayConfiguration");
 
             // Create window on the Carplay screen
             self.rootWindow = objcInvoke_1([objc_getClass("UIRootSceneWindow") alloc], @"initWithDisplayConfiguration:", displayConfiguration);
@@ -85,7 +100,9 @@ id getCarplayCADisplay(void)
 
         // "unblank" the screen. This is necessary for animations/video to render when the device is locked.
         // This does not cause the screen to actually light up
-        orig_BKSDisplayServicesSetScreenBlanked(0);
+        if (orig_BKSDisplayServicesSetScreenBlanked) {
+            orig_BKSDisplayServicesSetScreenBlanked(0);
+        }
 
         [UIView animateWithDuration:1.0 animations:^(void)
         {
@@ -129,18 +146,24 @@ id getCarplayCADisplay(void)
 
 - (void)setupWallpaperBackground
 {
-    CGRect rootWindowFrame = [[self rootWindow] frame];
+//     CGRect rootWindowFrame = [[self rootWindow] frame];
 
-    UIImageView *wallpaperImageView = [[UIImageView alloc] initWithFrame:rootWindowFrame];
-    id defaultWallpaper = objcInvoke(objc_getClass("CRSUIWallpaperPreferences"), @"defaultWallpaper");
-    assertGotExpectedObject(defaultWallpaper, @"CRSUIWallpaper");
+//     UIImageView *wallpaperImageView = [[UIImageView alloc] initWithFrame:rootWindowFrame];
+//     id defaultWallpaper = objcInvoke(objc_getClass("CRSUIWallpaperPreferences"), @"defaultWallpaper");
+//     if (!defaultWallpaper) {
+//         defaultWallpaper = objcInvoke(objc_getClass("CRSUISystemWallpaper"), @"defaultWallpaper");
+//         assertGotExpectedObject(defaultWallpaper, @"CRSUISystemWallpaper");
+//     }
+//     else {
+//         assertGotExpectedObject(defaultWallpaper, @"CRSUIWallpaper");
+//     }
 
-    UIImage *wallpaperImage = objcInvoke_1(defaultWallpaper, @"wallpaperImageCompatibleWithTraitCollection:", nil);
-    [wallpaperImageView setImage:wallpaperImage];
-    UIVisualEffectView *wallpaperBlurView = [[UIVisualEffectView alloc] initWithEffect:objcInvoke_1(objc_getClass("UIBlurEffect"), @"effectWithBlurRadius:", 10.0)];
-    [wallpaperBlurView setFrame:rootWindowFrame];
-    [wallpaperImageView addSubview:wallpaperBlurView];
-    [[self rootWindow] addSubview:wallpaperImageView];
+//     UIImage *wallpaperImage = objcInvoke_1(defaultWallpaper, @"wallpaperImageCompatibleWithTraitCollection:", nil);
+//     [wallpaperImageView setImage:wallpaperImage];
+//     UIVisualEffectView *wallpaperBlurView = [[UIVisualEffectView alloc] initWithEffect:objcInvoke_1(objc_getClass("UIBlurEffect"), @"effectWithBlurRadius:", 10.0)];
+//     [wallpaperBlurView setFrame:rootWindowFrame];
+//     [wallpaperImageView addSubview:wallpaperBlurView];
+//     [[self rootWindow] addSubview:wallpaperImageView];
 }
 
 - (void)setupDock
@@ -268,10 +291,29 @@ id getCarplayCADisplay(void)
     id displaySceneManager = objcInvoke(objc_getClass("SBSceneManagerCoordinator"), @"mainDisplaySceneManager");
     assertGotExpectedObject(displaySceneManager, @"SBMainDisplaySceneManager");
 
-    id sceneLayoutManager = objcInvoke(displaySceneManager, @"_layoutStateManager");
+    id sceneLayoutManager = objcInvoke(displaySceneManager, @"layoutStateManager");
+    if (!sceneLayoutManager) {
+        sceneLayoutManager = objcInvoke(displaySceneManager, @"layoutStateManager");
+    }
+    NSLog(@"carplayenable: Creating scene with layout manager: %@", sceneLayoutManager);
     assertGotExpectedObject(sceneLayoutManager, @"SBMainDisplayLayoutStateManager");
 
-    id mainScreenIdentity = objcInvoke(displaySceneManager, @"displayIdentity");
+    id displayConfiguration = nil;
+    for (UIScreen *currentScreen in [UIScreen screens]) {
+        if (objcInvokeT(currentScreen, @"_isCarScreen", BOOL)) {
+            
+            displayConfiguration = objcInvoke(currentScreen, @"fbsDisplay");
+            if (displayConfiguration) {
+                break;
+            }
+        }
+    }
+    assertGotExpectedObject(displayConfiguration, @"FBSDisplayConfiguration");
+    NSLog(@"carplayenable: Creating scene with display configuration: %@", displayConfiguration);
+
+    id displayIdentity = objcInvoke(displayConfiguration, @"identity");
+
+    id mainScreenIdentity = displayIdentity;// objcInvoke(displaySceneManager, @"displayIdentity");
     assertGotExpectedObject(mainScreenIdentity, @"FBSDisplayIdentity");
 
     id sceneIdentity = nil;
@@ -281,7 +323,9 @@ id getCarplayCADisplay(void)
     else if ([displaySceneManager respondsToSelector:NSSelectorFromString(@"_sceneIdentityForApplication:createPrimaryIfRequired:sceneSessionRole:")]) {
         sceneIdentity = objcInvoke_3(displaySceneManager, @"_sceneIdentityForApplication:createPrimaryIfRequired:sceneSessionRole:", self.application, 1, @"UIWindowSceneSessionRoleApplication");
     }
-
+    else if ([displaySceneManager respondsToSelector:NSSelectorFromString(@"newSceneIdentityForApplication:")]) {
+        sceneIdentity = objcInvoke_1(displaySceneManager, @"newSceneIdentityForApplication:", self.application);
+    }
     assertGotExpectedObject(sceneIdentity, @"FBSSceneIdentity");
 
     id sceneHandleRequest = objcInvoke_3(objc_getClass("SBApplicationSceneHandleRequest"), @"defaultRequestForApplication:sceneIdentity:displayIdentity:", self.application, sceneIdentity, mainScreenIdentity);
@@ -331,7 +375,7 @@ id getCarplayCADisplay(void)
                 sceneSettings = objcInvoke(sceneSettings, @"mutableCopy");
                 assertGotExpectedObject(sceneSettings, @"UIMutableApplicationSceneSettings");
 
-                objcInvoke_1(sceneSettings, @"setBackgrounded:", 0);
+                // objcInvoke_1(sceneSettings, @"setBackgrounded:", 0);
                 objcInvoke_1(sceneSettings, @"setForeground:", 1);
                 objcInvoke_1(sceneSettings, @"setInterfaceOrientation:", self.orientation);
                 objcInvoke_1(sceneSettings, @"setDeviceOrientation:", self.orientation);
@@ -491,7 +535,7 @@ When a CarPlay App is closed
                 sceneSettings = objcInvoke(sceneSettings, @"mutableCopy");
                 assertGotExpectedObject(sceneSettings, @"UIMutableApplicationSceneSettings");
 
-                objcInvoke_1(sceneSettings, @"setBackgrounded:", 1);
+                // objcInvoke_1(sceneSettings, @"setBackgrounded:", 1);
                 objcInvoke_1(sceneSettings, @"setForeground:", 0);
                ((void (*)(id, SEL, id, id, id))objc_msgSend)(appScene, NSSelectorFromString(@"updateSettings:withTransitionContext:completion:"), sceneSettings, nil, ^{});
             }
@@ -502,7 +546,7 @@ When a CarPlay App is closed
         {
             void *_BKSHIDServicesGetBacklightFactor = dlsym(RTLD_DEFAULT, "BKSHIDServicesGetBacklightFactor");
             float backlightFactor = ((float (*)(void))_BKSHIDServicesGetBacklightFactor)();
-            if (backlightFactor < 0.2)
+            if (backlightFactor < 0.2 && orig_BKSDisplayServicesSetScreenBlanked)
             {
                 orig_BKSDisplayServicesSetScreenBlanked(1);
             }
@@ -549,11 +593,9 @@ When the "rotate orientation" button is pressed on a CarplayEnabled app window
 /*
 Handle resizing the Carplay App window. Called anytime the app orientation changes (including first appearance)
 */
-- (void)resizeAppViewForOrientation:(int)desiredOrientation fullscreen:(BOOL)fullscreen forceUpdate:(BOOL)forceUpdate
-{
+- (void)resizeAppViewForOrientation:(int)desiredOrientation fullscreen:(BOOL)fullscreen forceUpdate:(BOOL)forceUpdate {
     LOG_LIFECYCLE_EVENT;
-    if (!forceUpdate && (desiredOrientation == self.orientation && self.isFullscreen == fullscreen))
-    {
+    if (!forceUpdate && (desiredOrientation == self.orientation && self.isFullscreen == fullscreen)) {
         return;
     }
 
@@ -561,19 +603,16 @@ Handle resizing the Carplay App window. Called anytime the app orientation chang
     id deviceAppViewController = getIvar(self.appViewController, @"_deviceAppViewController");
     ((void (*)(id, SEL, unsigned long long))objc_msgSend)(deviceAppViewController, NSSelectorFromString(@"setHomeGrabberDisplayMode:"), 1);
 
-    id appSceneView = getIvar(deviceAppViewController, @"_sceneView");
-    assertGotExpectedObject(appSceneView, @"SBSceneView");
-    UIView *hostingContentView = getIvar(appSceneView, @"_sceneContentContainerView");
+    // id appSceneView = getIvar(deviceAppViewController, @"_sceneView");
+    // assertGotExpectedObject(appSceneView, @"SBSceneView");
+    // UIView *hostingContentView = getIvar(appSceneView, @"_sceneContentContainerView");
     UIScreen *targetScreen = nil;
-    if (_drawOnMainScreen)
-    {
+    if (_drawOnMainScreen) {
         targetScreen = [UIScreen mainScreen];
     }
     else {
-        for (UIScreen *currentScreen in [UIScreen screens])
-        {
-            if (objcInvokeT(currentScreen, @"_isCarScreen", BOOL))
-            {
+        for (UIScreen *currentScreen in [UIScreen screens]) {
+            if (objcInvokeT(currentScreen, @"_isCarScreen", BOOL)) {
                 targetScreen = currentScreen;
                 break;
             }
