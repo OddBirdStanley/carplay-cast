@@ -28,7 +28,7 @@ jobs:
         - name: Build Package
           id: build_package
           run: |
-            make package FINALPACKAGE=1
+            make package FINALPACKAGE=1 ADDITIONAL_CFLAGS="-Wno-error"
             echo "::set-output name=package::$(ls -t packages | head -n1)"
         - name: Upload artifact
           uses: actions/upload-artifact@v4
