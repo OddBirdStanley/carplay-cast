@@ -1,6 +1,5 @@
 #include "../common.h"
 #include "../CRCarplayWindow.h"
-#include "../crash_reporting/reporting.h"
 
 
 /*
@@ -128,8 +127,6 @@ Invoked when SpringBoard finishes launching
         [[objc_getClass("NSDistributedNotificationCenter") defaultCenter] postNotification:[NSNotification notificationWithName:PREFERENCES_APP_DATA_NOTIFICATION object:kPrefsAppDataReceiving userInfo:replyDict]];
     }];
 
-    // Upload any relevant crashlogs
-    symbolicateAndUploadCrashlogs();
 }
 
 %new

@@ -1,4 +1,3 @@
-#include "../crash_reporting/reporting.h"
 #include "../common.h"
 
 /*
@@ -311,7 +310,5 @@ will launch their normal Carplay mode UI
     if ([[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.CarPlayApp"])
     {
         %init(CARPLAY);
-        // Upload any relevant crashlogs
-        symbolicateAndUploadCrashlogs();
     }
 }

@@ -7,8 +7,8 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-REPO_IP_ADDRESS = "206.189.219.64"
-REPO_PATH = "/var/www/ghostbinrepo"
+REPO_IP_ADDRESS = ""  # Set your repo server IP
+REPO_PATH = ""  # Set your repo server path
 DEBS_FOLDER = "debs"
 
 
