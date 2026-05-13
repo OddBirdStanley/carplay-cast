@@ -18,10 +18,7 @@ jobs:
         - name: Install Dependencies
           run: brew install ldid xz
         - name: Setup Theos
-          run: |
-            git clone https://github.com/theos/theos.git theos
-            cd theos && git checkout 8771215f765e774bfefdacc6ddf0e151c2973d49
-            git submodule update --init --recursive
+          run: git clone --recursive https://github.com/theos/theos.git theos
         - name: Download SDKs
           run: |
             curl -LO https://github.com/SamHep0803/iOS-13-Patched-SDK/archive/master.zip
