@@ -3,14 +3,18 @@ on: push
 jobs:
   build:
     name: Build Tweak
-    runs-on: macOS-latest
+    runs-on: macos-13
     env:
       THEOS: theos
     steps:
         - name: Force HTTPS for git
           run: git config --global url."https://github.com/".insteadOf "git://github.com/"
         - name: Checkout
-          uses: actions/checkout@master
+          uses: actions/checkout@v4
+        - name: Select Xcode
+          uses: maxim-lobanov/setup-xcode@v1
+          with:
+            xcode-version: '14.1'
         - name: Install Dependencies
           run: brew install ldid xz
         - name: Setup Theos
@@ -28,8 +32,8 @@ jobs:
         - name: Build Package
           id: build_package
           run: |
-            make package FINALPACKAGE=1 ADDITIONAL_CFLAGS="-Wno-error"
-            echo "::set-output name=package::$(ls -t packages | head -n1)"
+            make package FINALPACKAGE=1 ADDITIONAL_CFLAGS="-Wno-error -Wno-deprecated-module-dot-map"
+            echo "package=$(ls -t packages | head -n1)" >> $GITHUB_OUTPUT
         - name: Upload artifact
           uses: actions/upload-artifact@v4
           with:
