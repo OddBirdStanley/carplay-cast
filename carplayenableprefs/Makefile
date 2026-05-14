@@ -7,7 +7,7 @@ BUNDLE_NAME = carplayenableprefs
 
 carplayenableprefs_FILES = $(wildcard *.m) ../src/CRPreferences.mm
 carplayenableprefs_INSTALL_PATH = /Library/PreferenceBundles
-carplayenableprefs_FRAMEWORKS = UIKit
+carplayenableprefs_FRAMEWORKS = UIKit MapKit CoreLocation
 carplayenableprefs_PRIVATE_FRAMEWORKS = Preferences
 carplayenableprefs_CFLAGS = -fobjc-arc
 

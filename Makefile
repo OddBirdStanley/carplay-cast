@@ -5,6 +5,7 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = carplayenable
 carplayenable_FILES = $(wildcard src/hooks/*.xm) $(wildcard src/*.mm)
+carplayenable_FRAMEWORKS = CoreLocation
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

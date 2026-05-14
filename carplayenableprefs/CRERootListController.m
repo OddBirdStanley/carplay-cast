@@ -42,7 +42,7 @@
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    return 3;
+    return 4;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -54,6 +54,8 @@
         case 1:
             return 3;
         case 2:
+            return 1;
+        case 3:
             return 1;
         default:
             break;
@@ -113,7 +115,15 @@
             [cell setAccessoryView:cellSwitch];
         }
     }
-    
+    else if (indexPath.section == 3)
+    {
+        if (indexPath.row == 0)
+        {
+            [[cell textLabel] setText:@"Location Spoofer"];
+            [cell setAccessoryType:UITableViewCellAccessoryDisclosureIndicator];
+        }
+    }
+
     return cell;
 }
 
@@ -127,6 +137,8 @@
             return @"Dock Alignment";
         case 2:
             return @"Carplay Icons";
+        case 3:
+            return @"Tools";
         default:
             break;
     }
@@ -163,6 +175,15 @@
             [[CRPreferences sharedInstance] updateValue:@(indexPath.row) forPreferenceKey:@"dockAlignment"];
             // Notify CarPlay of the changes
             [[objc_getClass("NSDistributedNotificationCenter") defaultCenter] postNotification:[NSNotification notificationWithName:PREFERENCES_CHANGED_NOTIFICATION object:kPrefsDockAlignmentChanged]];
+            break;
+        }
+        case 3:
+        {
+            if (!_locationSpoofController)
+            {
+                _locationSpoofController = [[LocationSpoofController alloc] init];
+            }
+            [[self navigationController] pushViewController:_locationSpoofController animated:YES];
             break;
         }
         default:
